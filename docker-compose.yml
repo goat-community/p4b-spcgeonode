@@ -77,8 +77,10 @@ services:
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - LETSENCRYPT_MODE=${LETSENCRYPT_MODE}
     volumes:
-      - nginx-certificates:/geonode-certificates
+      - nginx-certificates:/spcgeonode-certificates
     restart: on-failure
+    depends_on:
+      - geonode
 
   # Geoserver backend
   geoserver:
@@ -120,8 +122,8 @@ services:
       - dbbackups:/pg_backups
     restart: on-failure
     # uncomment to enable remote connections to postgres
-    #ports:
-    #  - "5432:5432"
+    ports:
+     - "5432:5432"
 
   # Vanilla RabbitMQ service. This is needed by celery
   rabbitmq:
@@ -130,6 +132,27 @@ services:
     volumes:
       - rabbitmq:/var/lib/rabbitmq
     restart: on-failure
+
+  # Docker image for performing simple backups of Docker volumes
+  backup:
+    #   AWS_S3_BUCKET_NAME: my-backup-bucket      # S3 bucket which you own, and already exists
+    #   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}   # Read AWS secrets from environment (or a .env file)
+    #   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    # - BACKUP_CRON_EXPRESSION=*/5 * * * *
+    image: futurice/docker-volume-backup
+    volumes:
+      - statics:/backup/statics:ro
+      - nginx-confd:/backup/nginx-confd:ro
+      - nginx-certificates:/backup/nginx-certificates:ro
+      - geoserver-data-dir:/backup/geoserver-data-dir:ro
+      - dbdata:/backup/dbdata:ro
+      - dbbackups:/backup/dbbackups:ro
+      - backup-restore:/backup/backup-restore:ro
+      - data:/backup/data:ro             
+      - tmp:/backup/tmp:ro
+      - rabbitmq:/backup/rabbitmq:ro   
+      - ./backups:/archive                      # Mount a local folder as the backup archive or S3 Bucket
+
 
 volumes:
   statics:
