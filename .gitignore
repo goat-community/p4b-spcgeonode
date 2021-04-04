@@ -98,4 +98,4 @@ scripts/spcgeonode/_volume_*
 
 /worker.state
 
-.env
+/scripts/spcgeonode/.env
